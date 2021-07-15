@@ -54,28 +54,45 @@ node ('maven') {
     }
 
     stage('Build Image') {
-        sh '''oc start-build spring-app --follow \
-                  --from-file=target/spring-app-0.0.1-SNAPSHOT.jar'''
+
+        def buildCmd = '''oc start-build spring-app -o name \
+                              --from-file=target/spring-app-0.0.1-SNAPSHOT.jar'''
+
+        def output = sh (script: buildCmd, returnStdout: true)
+        sh "oc logs -f ${output}"
+        sh "oc describe ${output}"
+
+        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-app:latest'
     }
 
     stage('Deploy') {
-        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-apps-dev/spring-app:latest'
+        sh 'oc tag spring-app:latest spring-apps-dev/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-dev'
+        sh '''oc set probe deploy/spring-app -n spring-apps-dev \
+                  --readiness --get-url=http://:8080/'''
+
         sh 'oc rollout status deploy/spring-app -n spring-apps-dev'
-        sh 'oc create route edge spring-app --service spring-app -n spring-apps-dev'
     }
 
     stage('Integration Tests') {
-        // add simple curl tests
+
+        def output = sh (
+          script: 'curl http://spring-app.spring-apps-dev:8080/',
+          returnStdout: true
+        )
+
+        assert output == 'Hello World!'
     }
 
     stage('Promote') {
-        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-apps-staging/spring-app:latest'
+        sh 'oc tag spring-app:latest spring-apps-staging/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-staging'
         sh 'oc rollout status deploy/spring-app -n spring-apps-staging'
         sh 'oc create route edge spring-app --service spring-app -n spring-apps-staging'
+
+        sh 'oc get route spring-app -n spring-apps-staging'
     }
 
 }
