@@ -59,7 +59,7 @@ node ('maven') {
     }
 
     stage('Deploy') {
-        sh 'oc tag docker.apps.ocp4.kskels.com/spring-app:latest spring-apps-dev/spring-app:latest'
+        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-apps-dev/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-dev'
         sh 'oc rollout status deploy/spring-app -n spring-apps-dev'
@@ -71,7 +71,7 @@ node ('maven') {
     }
 
     stage('Promote') {
-        sh 'oc tag docker.apps.ocp4.kskels.com/spring-app:latest spring-apps-staging/spring-app:latest'
+        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-apps-staging/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-staging'
         sh 'oc rollout status deploy/spring-app -n spring-apps-staging'
