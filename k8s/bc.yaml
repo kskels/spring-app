@@ -1,0 +1,21 @@
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  labels:
+    build: spring-app
+  name: spring-app
+  namespace: devops-tools-jenkins
+spec:
+  output:
+    to:
+      kind: ImageStreamTag
+      name: spring-app:latest
+  source:
+    binary: {}
+    type: Binary
+  strategy:
+    sourceStrategy:
+      from:
+        kind: DockerImage
+        name: registry.redhat.io/ubi8/openjdk-11
+    type: Source
