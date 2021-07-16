@@ -4,7 +4,7 @@ metadata:
   labels:
     build: spring-app
   name: spring-app
-  namespace: devops-tools-jenkins
+  namespace: spring-apps-cicd
 spec:
   output:
     to:

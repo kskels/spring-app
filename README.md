@@ -25,14 +25,14 @@ Create and set permissions for development and staging namespaces
 oc new-project spring-apps-dev
 
 oc policy -n spring-apps-dev add-role-to-user edit \
-  system:serviceaccount:devops-tools-jenkins:jenkins
-oc policy -n devops-tools-jenkins add-role-to-group system:image-puller \
+  system:serviceaccount:spring-apps-cicd:jenkins
+oc policy -n spring-apps-cicd add-role-to-group system:image-puller \
   system:serviceaccounts:spring-apps-dev
 
 oc new-project spring-apps-staging
 
 oc policy -n spring-apps-staging add-role-to-user edit \
-  system:serviceaccount:devops-tools-jenkins:jenkins
-oc policy -n devops-tools-jenkins add-role-to-group system:image-puller \
+  system:serviceaccount:spring-apps-cicd:jenkins
+oc policy -n spring-apps-cicd add-role-to-group system:image-puller \
   system:serviceaccounts:spring-apps-staging
 ```

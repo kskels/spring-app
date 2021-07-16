@@ -6,7 +6,7 @@ node ('maven') {
     }
 
     stage('Checkout') {
-        git credentialsId: 'gitea-creds', branch: 'main',
+        git credentialsId: 'gitea-user-pass', branch: 'main',
           url: 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
     }
 
@@ -54,11 +54,12 @@ node ('maven') {
     }
 
     stage('Trigger Image Build') {
-        openshift.withCluster() {
-          openshift.withProject('spring-apps-dev') {
-            openshift.selector("bc", "spring-app").startBuild("--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
-          }
-        }
+
+        def buildCmd = '''oc start-build spring-app -o name \
+                              --from-file=target/spring-app-0.0.1-SNAPSHOT.jar'''
+
+        def output = sh (script: buildCmd, returnStdout: true)
+        sh "oc logs -f ${output}"
 
         sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-app:latest'
     }
