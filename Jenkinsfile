@@ -10,7 +10,7 @@ node ('maven') {
           url: 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
     }
 
-    stage('Maven Goals') {
+    stage('Build Maven Package') {
         sh 'mvn test package'
     }
 
@@ -21,8 +21,8 @@ node ('maven') {
         }
     }
 
-    stage('Publish') {
-        // Archive artifacts in Nexus Repository Manager
+    stage('Archive Artifacts in Nexus') {
+        // See more details about the plugin at
         // https://www.jenkins.io/doc/pipeline/steps/nexus-jenkins-plugin/
         nexusPublisher nexusInstanceId: 'nexus',
           nexusRepositoryId: 'maven-releases',
@@ -53,19 +53,18 @@ node ('maven') {
         sh 'oc apply -f k8s/'
     }
 
-    stage('Build Image') {
+    stage('Trigger Image Build') {
 
         def buildCmd = '''oc start-build spring-app -o name \
                               --from-file=target/spring-app-0.0.1-SNAPSHOT.jar'''
 
         def output = sh (script: buildCmd, returnStdout: true)
         sh "oc logs -f ${output}"
-        sh "oc describe ${output}"
 
         sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-app:latest'
     }
 
-    stage('Deploy') {
+    stage('Deploy to Dev') {
         sh 'oc tag spring-app:latest spring-apps-dev/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-dev'
@@ -85,7 +84,7 @@ node ('maven') {
         assert output == 'Hello World!'
     }
 
-    stage('Promote') {
+    stage('Promote to Staging') {
         sh 'oc tag spring-app:latest spring-apps-staging/spring-app:latest'
 
         sh 'oc new-app spring-app -n spring-apps-staging'
