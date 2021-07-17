@@ -1,8 +1,15 @@
+def CICD_PROJECT = 'spring-apps-cicd'
+def DEV_PROJECT = 'spring-apps-dev'
+def STAGING_PROJECT = 'spring-apps-staging'
+
+def NEXUS_DOCKER_URL = 'docker.apps.ocp4.kskels.com'
+
+
 node ('maven') {
 
     stage('Preamble') {
-        sh 'oc delete all -l app=spring-app -n spring-apps-dev'
-        sh 'oc delete all -l app=spring-app -n spring-apps-staging'
+        sh "oc delete all -l app=spring-app -n ${DEV_PROJECT}"
+        sh "oc delete all -l app=spring-app -n ${STAGING_PROJECT}"
     }
 
     stage('Checkout') {
@@ -55,22 +62,55 @@ node ('maven') {
 
     stage('Trigger Image Build') {
         openshift.withCluster() {
-          openshift.withProject('spring-apps-dev') {
-            openshift.selector("bc", "spring-app").startBuild("--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
-          }
-        }
+            openshift.withProject(CICD_PROJECT) {
 
-        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-app:latest'
+                openshift.selector("bc", "spring-app").startBuild(
+                    "--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
+
+                openshift.tag("${NEXUS_DOCKER_URL}/demos/spring-app:latest",
+                    "${CICD_PROJECT}/spring-app:latest")
+            }
+        }
     }
 
     stage('Deploy to Dev') {
-        sh 'oc tag spring-app:latest spring-apps-dev/spring-app:latest'
+        openshift.withCluster() {
+            openshift.withProject(DEV_PROJECT) {
 
-        sh 'oc new-app spring-app -n spring-apps-dev'
-        sh '''oc set probe deploy/spring-app -n spring-apps-dev \
-                  --readiness --get-url=http://:8080/'''
+                openshift.tag("${CICD_PROJECT}/spring-app:latest",
+                    "${DEV_PROJECT}/spring-app:latest")
 
-        sh 'oc rollout status deploy/spring-app -n spring-apps-dev'
+                def app = openshift.newApp('spring-app:latest')
+                def dcpatch = [
+                    "metadata":[
+                        "name":"spring-app",
+                        "namespace":"${DEV_PROJECT}"
+                    ],
+                    "apiVersion":"apps/v1",
+                    "kind":"Deployment",
+                    "spec":[
+                        "template":[
+                            "spec":[
+                                "containers":[[
+                                    "name":"spring-app",
+                                    "readinessProbe":[
+                                        "failureThreshold":3,
+                                        "httpGet": [
+                                            "path":"/",
+                                            "port":8080,
+                                            "scheme": "HTTP"
+                                        ]
+                                    ]
+                                ]]
+                            ]
+                        ]
+                    ]
+                ]
+
+                openshift.apply(dcpatch)
+                openshift.selector("deploy", "spring-app").rollout().status()
+            }
+        }
     }
 
     stage('Integration Tests') {
@@ -83,19 +123,25 @@ node ('maven') {
         assert output == 'Hello World!'
     }
 
-    // stage('Approval for Staging') {
-    //     timeout(time: 30, unit: 'DAYS') {
-    //         input message: "Start deployment to Staging?"
-    //     }
-    // }
+    stage('Approval for Staging') {
+        timeout(time: 30, unit: 'DAYS') {
+            input message: "Start deployment to Staging?"
+        }
+    }
 
     stage('Promote to Staging') {
-        sh 'oc tag spring-app:latest spring-apps-staging/spring-app:latest'
+        openshift.withCluster() {
+            openshift.withProject(STAGING_PROJECT) {
 
-        sh 'oc new-app spring-app -n spring-apps-staging'
-        sh 'oc rollout status deploy/spring-app -n spring-apps-staging'
+                openshift.tag("${CICD_PROJECT}/spring-app:latest",
+                    "${STAGING_PROJECT}/spring-app:stage")
+
+                openshift.newApp('spring-app:stage')
+                openshift.selector("deploy", "spring-app").rollout().status()
+            }
+        }
+
         sh 'oc create route edge spring-app --service spring-app -n spring-apps-staging'
-
         sh 'oc get route spring-app -n spring-apps-staging'
     }
 
