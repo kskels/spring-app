@@ -123,11 +123,11 @@ node ('maven') {
         assert output == 'Hello World!'
     }
 
-    stage('Approval for Staging') {
-        timeout(time: 30, unit: 'DAYS') {
-            input message: "Start deployment to Staging?"
-        }
-    }
+    // stage('Approval for Staging') {
+    //     timeout(time: 30, unit: 'DAYS') {
+    //         input message: "Start deployment to Staging?"
+    //     }
+    // }
 
     stage('Promote to Staging') {
         openshift.withCluster() {
