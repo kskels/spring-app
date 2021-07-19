@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: apply-manifests
+spec:
+  workspaces:
+  - name: source
+  params:
+    - name: manifest_dir
+      description: The directory in source that contains yaml manifests
+      type: string
+      default: "deploy/overlays/dev"
+    - name: namespace
+      description: Namespace
+      type: string
+      default: "spring-apps-dev"
+  steps:
+    - name: apply
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      workingDir: /workspace/source
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          oc apply -k $(inputs.params.manifest_dir)
+          oc rollout status deploy/spring-app -n $(inputs.params.namespace)
+
+          oc get route spring-app -n $(inputs.params.namespace)

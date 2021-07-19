@@ -1,0 +1,157 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-and-deploy-spring-app
+spec:
+  workspaces:
+  - name: shared-workspace
+  - name: maven-settings
+  params:
+  - name: deployment-name
+    type: string
+    description: name of the deployment to be patched
+    default: "spring-app"
+  - name: git-url
+    type: string
+    description: url of the git repo for the code of deployment
+    default: "https://gitea.apps.ocp4.kskels.com/demos/spring-app.git"
+  - name: git-revision
+    type: string
+    description: revision to be used from repo of the code for deployment
+    default: "main"
+  - name: IMAGE
+    type: string
+    description: image to be build from the code
+    default: "image-registry.openshift-image-registry.svc:5000/spring-apps-cicd/spring-app"
+  tasks:
+
+  - name: fetch-repository
+    taskRef:
+      name: git-clone
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+    params:
+    - name: url
+      value: $(params.git-url)
+    - name: subdirectory
+      value: ""
+    - name: deleteExisting
+      value: "true"
+    - name: revision
+      value: $(params.git-revision)
+
+  - name: cleanup-dev
+    taskRef:
+      name: delete-manifests
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: manifest_dir
+      value: deploy/overlays/dev
+    runAfter:
+    - fetch-repository
+
+  - name: cleanup-staging
+    taskRef:
+      name: delete-manifests
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: manifest_dir
+      value: deploy/overlays/staging
+    runAfter:
+    - fetch-repository
+
+  - name: run-maven-goals
+    taskRef:
+      name: maven
+      kind: ClusterTask
+    params:
+    - name: GOALS
+      value:
+        - validate
+        - test
+        - package
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    - name: maven-settings
+      workspace: maven-settings
+    runAfter:
+    - cleanup-dev
+    - cleanup-staging
+
+  - name: build-image
+    taskRef:
+      name: s2i-java
+      kind: ClusterTask
+    params:
+    - name: TLSVERIFY
+      value: "false"
+    - name: IMAGE
+      value: $(params.IMAGE)
+    - name: PATH_CONTEXT
+      value: 'target'
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - run-maven-goals
+
+  - name: deploy-to-dev
+    taskRef:
+      name: apply-manifests
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: manifest_dir
+      value: deploy/overlays/dev
+    - name: namespace
+      value: spring-apps-dev
+    runAfter:
+    - build-image
+
+  - name: integration-tests
+    taskRef:
+      name: integration-tests
+      kind: Task
+    runAfter:
+    - deploy-to-dev
+
+  - name: tag-for-staging
+    taskRef:
+      name: skopeo-copy
+      kind: ClusterTask
+    workspaces:
+    - name: images-url
+      workspace: shared-workspace
+    params:
+    - name: srcImageURL
+      value: "docker://$(params.IMAGE):latest"
+    - name: destImageURL
+      value: "docker://$(params.IMAGE):staging"
+    runAfter:
+    - integration-tests
+
+  - name: deploy-to-staging
+    taskRef:
+      name: apply-manifests
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: manifest_dir
+      value: deploy/overlays/staging
+    - name: namespace
+      value: spring-apps-staging
+    runAfter:
+    - tag-for-staging

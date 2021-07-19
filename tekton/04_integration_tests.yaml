@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: integration-tests
+spec:
+  steps:
+    - name: tests
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+
+          OUTPUT=$(curl http://spring-app.spring-apps-dev:8080/)
+
+          if [ "$OUTPUT" == "Hello World!" ]; then
+              echo "Integration tests successful, output: ${OUTPUT}"
+              exit 0
+          else
+              echo "Failure: Output ${OUTPUT} is not expected!"
+              exit 1
+          fi
