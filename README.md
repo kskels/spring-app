@@ -1,6 +1,6 @@
 # Spring Boot Sample Application
 
-The app is created to demostrate Jenkins CI/CD flows on Red Hat OpenShift 
+The app is created to demostrate Jenkins CI/CD flow on Red Hat OpenShift
 Container Platform. For more info see
 https://www.openshift.com/blog/jenkins-pipelines .
 
@@ -8,10 +8,10 @@ Initial code generated using https://start.spring.io/ .
 
 ## Jenkins
 
-Jenkins server is installed in `devops-tools-jenkins` namespace
+Jenkins server is installed in `spring-apps-cicd` namespace
 
 ```bash
-oc get pods -n devops-tools-jenkins
+oc get pods -n spring-apps-cicd
 NAME                 READY   STATUS      RESTARTS   AGE
 jenkins-1-deploy     0/1     Completed   0          24h
 jenkins-1-lrcgn      1/1     Running     0          24h
