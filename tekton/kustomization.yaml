@@ -1,0 +1,7 @@
+resources:
+ - 01_apply_manifests.yaml
+ - 02_delete_manifests.yaml
+ - 03_persistent_volume_claim.yaml
+ - 04_integration_tests.yaml
+ - 05_pipeline.yaml
+

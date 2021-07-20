@@ -75,9 +75,8 @@ spec:
     params:
     - name: GOALS
       value:
-        - validate
-        - test
         - package
+        - deploy
     workspaces:
     - name: source
       workspace: shared-workspace
