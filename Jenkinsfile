@@ -21,31 +21,38 @@ node ('maven') {
         sh 'mvn test package'
     }
 
-    stage('SonarQube Analysis') {
-        withSonarQubeEnv(credentialsId: 'sonarqube-token',
-                         installationName: 'sonarqube') {
-            sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.7.0.1746:sonar'
+    stage('Archive Artifacts in Nexus') {
+        configFileProvider(
+           [configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+            sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
         }
     }
 
-    stage('Archive Artifacts in Nexus') {
-        // See more details about the plugin at
-        // https://www.jenkins.io/doc/pipeline/steps/nexus-jenkins-plugin/
-        nexusPublisher nexusInstanceId: 'nexus',
-          nexusRepositoryId: 'maven-releases',
-          packages: [[
-            $class: 'MavenPackage',
-            mavenAssetList: [[
-              classifier: '', extension: '',
-              filePath: 'target/spring-app-0.0.1-SNAPSHOT.jar'
-            ]],
-            mavenCoordinate: [
-              artifactId: 'spring-app',
-              groupId: 'demos',
-              packaging: 'jar',
-              version: '0.0.1'
-            ]
-          ]]
+    // Alternative to publishiing artifacts using Jenkins plugin
+    // https://www.jenkins.io/doc/pipeline/steps/nexus-jenkins-plugin/
+    // stage('Archive Artifacts in Nexus') {
+    //     nexusPublisher nexusInstanceId: 'nexus',
+    //       nexusRepositoryId: 'maven-releases',
+    //       packages: [[
+    //         $class: 'MavenPackage',
+    //         mavenAssetList: [[
+    //           classifier: '', extension: '',
+    //           filePath: 'target/spring-app-0.0.1-SNAPSHOT.jar'
+    //         ]],
+    //         mavenCoordinate: [
+    //           artifactId: 'spring-app',
+    //           groupId: 'demos',
+    //           packaging: 'jar',
+    //           version: '0.0.1'
+    //         ]
+    //       ]]
+    // }
+
+    stage('SonarQube Analysis') {
+        withSonarQubeEnv(credentialsId: 'sonarqube-token',
+                         installationName: 'sonarqube') {
+            sh 'mvn sonar:sonar'
+        }
     }
 
     stage('Setup BuildConfig') {
