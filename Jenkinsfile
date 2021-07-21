@@ -9,36 +9,43 @@ def CICD_PROJECT = 'spring-apps-cicd'
 def DEV_PROJECT = 'spring-apps-dev'
 def STAGING_PROJECT = 'spring-apps-staging'
 
-def NEXUS_IMAGE_URL = 'docker.apps.ocp4.kskels.com/demos/spring-app'
-def GITEA_REPO_URL = 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
+def GITEA_REPO_URL = 'https://github.com/kskels/spring-app.git'
 
 
-node ('maven') {
+node ('maven-11') {
 
     stage('Preamble') {
-        sh "oc delete all -l app=spring-app -n ${DEV_PROJECT}"
-        sh "oc delete all -l app=spring-app -n ${STAGING_PROJECT}"
+        sh "oc delete deploy/spring-app -n ${DEV_PROJECT} || true"
+        sh "oc delete service/spring-app -n ${DEV_PROJECT} || true"
+
+        sh "oc delete deploy/spring-app -n ${STAGING_PROJECT} || true"
+        sh "oc delete service/spring-app -n ${STAGING_PROJECT} || true"
+        sh "oc delete route/spring-app -n ${STAGING_PROJECT} || true"
     }
 
-    stage('Checkout') {
-        git credentialsId: 'gitea-creds', branch: 'main', url: GITEA_REPO_URL
-    }
-
-    stage('Build Maven Package') {
-        sh 'mvn test package'
-    }
-
-    stage('Archive Artifacts in Nexus') {
-        configFileProvider([configFile(fileId: 'maven-settings',
-                                       variable: 'MAVEN_SETTINGS')]) {
-            sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
+    // Use specific image from Red Hat catalog
+    // registry.redhat.io/ubi8/openjdk-11
+    container('maven') {
+        stage('Checkout') {
+            git credentialsId: 'gitea-creds', branch: 'main', url: GITEA_REPO_URL
         }
-    }
 
-    stage('SonarQube Analysis') {
-        withSonarQubeEnv(credentialsId: 'sonarqube-token',
-                         installationName: 'sonarqube') {
-            sh 'mvn sonar:sonar'
+        stage('Build Maven Package') {
+            sh 'mvn test package'
+        }
+
+        stage('Archive Artifacts in Nexus') {
+            configFileProvider([configFile(fileId: 'maven-settings',
+                                           variable: 'MAVEN_SETTINGS')]) {
+                sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            withSonarQubeEnv(credentialsId: 'sonarqube-token',
+                             installationName: 'sonarqube') {
+                sh 'mvn sonar:sonar'
+            }
         }
     }
 
@@ -60,9 +67,6 @@ node ('maven') {
 
                 openshift.selector("bc", "spring-app").startBuild(
                     "--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
-
-                openshift.tag("${NEXUS_IMAGE_URL}:latest",
-                    "${CICD_PROJECT}/spring-app:latest")
             }
         }
     }
@@ -140,5 +144,4 @@ node ('maven') {
         sh 'oc create route edge spring-app --service spring-app -n spring-apps-staging'
         sh 'oc get route spring-app -n spring-apps-staging'
     }
-
 }
