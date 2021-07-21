@@ -7,9 +7,8 @@ spec:
   - name: source
   params:
     - name: manifest_dir
-      description: The directory in source that contains yaml manifests
+      description: The directory in source that contains Kustomize manifests
       type: string
-      default: "deploy/overlays/dev"
   steps:
     - name: apply
       image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
@@ -17,7 +16,6 @@ spec:
       command: ["/bin/bash", "-c"]
       args:
         - |-
-          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          echo "Deleting manifests from $(inputs.params.manifest_dir) directory"
           oc delete -k $(inputs.params.manifest_dir)
-          echo -----------------------------------
-
+          echo "Resources deleted!"

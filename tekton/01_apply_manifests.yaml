@@ -7,13 +7,11 @@ spec:
   - name: source
   params:
     - name: manifest_dir
-      description: The directory in source that contains yaml manifests
+      description: The directory in source that contains Kustomize manifests
       type: string
-      default: "deploy/overlays/dev"
     - name: namespace
-      description: Namespace
+      description: Target deployment namespace
       type: string
-      default: "spring-apps-dev"
   steps:
     - name: apply
       image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
@@ -21,7 +19,7 @@ spec:
       command: ["/bin/bash", "-c"]
       args:
         - |-
-          echo Applying manifests in $(inputs.params.manifest_dir) directory
+          echo "Applying manifests from $(inputs.params.manifest_dir) directory"
           oc apply -k $(inputs.params.manifest_dir)
           oc rollout status deploy/spring-app -n $(inputs.params.namespace)
 
