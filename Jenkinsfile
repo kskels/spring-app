@@ -1,8 +1,16 @@
+// Jenkins CI/CD flow on OpenShift for Spring Boot Application.
+// See following repo for more extensive and complete examples
+// https://github.com/siamaksade/openshift-jenkins-demo
+//
+// The pipeline is using OpenShift client plugin, see documenation at
+// https://github.com/jenkinsci/openshift-client-plugin
+
 def CICD_PROJECT = 'spring-apps-cicd'
 def DEV_PROJECT = 'spring-apps-dev'
 def STAGING_PROJECT = 'spring-apps-staging'
 
-def NEXUS_DOCKER_URL = 'docker.apps.ocp4.kskels.com'
+def NEXUS_IMAGE_URL = 'docker.apps.ocp4.kskels.com/demos/spring-app'
+def GITEA_REPO_URL = 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
 
 
 node ('maven') {
@@ -13,8 +21,7 @@ node ('maven') {
     }
 
     stage('Checkout') {
-        git credentialsId: 'gitea-creds', branch: 'main',
-          url: 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
+        git credentialsId: 'gitea-creds', branch: 'main', url: GITEA_REPO_URL
     }
 
     stage('Build Maven Package') {
@@ -22,31 +29,11 @@ node ('maven') {
     }
 
     stage('Archive Artifacts in Nexus') {
-        configFileProvider(
-           [configFile(fileId: 'maven-settings', variable: 'MAVEN_SETTINGS')]) {
+        configFileProvider([configFile(fileId: 'maven-settings',
+                                       variable: 'MAVEN_SETTINGS')]) {
             sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
         }
     }
-
-    // Alternative to publishiing artifacts using Jenkins plugin
-    // https://www.jenkins.io/doc/pipeline/steps/nexus-jenkins-plugin/
-    // stage('Archive Artifacts in Nexus') {
-    //     nexusPublisher nexusInstanceId: 'nexus',
-    //       nexusRepositoryId: 'maven-releases',
-    //       packages: [[
-    //         $class: 'MavenPackage',
-    //         mavenAssetList: [[
-    //           classifier: '', extension: '',
-    //           filePath: 'target/spring-app-0.0.1-SNAPSHOT.jar'
-    //         ]],
-    //         mavenCoordinate: [
-    //           artifactId: 'spring-app',
-    //           groupId: 'demos',
-    //           packaging: 'jar',
-    //           version: '0.0.1'
-    //         ]
-    //       ]]
-    // }
 
     stage('SonarQube Analysis') {
         withSonarQubeEnv(credentialsId: 'sonarqube-token',
@@ -74,7 +61,7 @@ node ('maven') {
                 openshift.selector("bc", "spring-app").startBuild(
                     "--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
 
-                openshift.tag("${NEXUS_DOCKER_URL}/demos/spring-app:latest",
+                openshift.tag("${NEXUS_IMAGE_URL}:latest",
                     "${CICD_PROJECT}/spring-app:latest")
             }
         }
@@ -88,6 +75,8 @@ node ('maven') {
                     "${DEV_PROJECT}/spring-app:latest")
 
                 def app = openshift.newApp('spring-app:latest')
+
+                // Setting up http://:8080/ readiness probe
                 def dcpatch = [
                     "metadata":[
                         "name":"spring-app",
@@ -121,7 +110,7 @@ node ('maven') {
     }
 
     stage('Integration Tests') {
-
+        sh 'sleep 4'
         def output = sh (
           script: 'curl http://spring-app.spring-apps-dev:8080/',
           returnStdout: true
@@ -141,9 +130,9 @@ node ('maven') {
             openshift.withProject(STAGING_PROJECT) {
 
                 openshift.tag("${CICD_PROJECT}/spring-app:latest",
-                    "${STAGING_PROJECT}/spring-app:stage")
+                    "${STAGING_PROJECT}/spring-app:staging")
 
-                openshift.newApp('spring-app:stage')
+                openshift.newApp('spring-app:staging')
                 openshift.selector("deploy", "spring-app").rollout().status()
             }
         }

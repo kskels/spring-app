@@ -1,44 +1,42 @@
+// Jenkins CI/CD flow on OpenShift for Spring Boot Application.
+// See following repo for more extensive and complete examples
+// https://github.com/siamaksade/openshift-jenkins-demo
+
+def CICD_PROJECT = 'spring-apps-cicd'
+def DEV_PROJECT = 'spring-apps-dev'
+def STAGING_PROJECT = 'spring-apps-staging'
+
+def NEXUS_IMAGE_URL = 'docker.apps.ocp4.kskels.com/demos/spring-app'
+def GITEA_REPO_URL = 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
+
+
 node ('maven') {
 
     stage('Preamble') {
-        sh 'oc delete all -l app=spring-app -n spring-apps-dev'
-        sh 'oc delete all -l app=spring-app -n spring-apps-staging'
+        sh "oc delete all -l app=spring-app -n ${DEV_PROJECT}"
+        sh "oc delete all -l app=spring-app -n ${STAGING_PROJECT}"
     }
 
     stage('Checkout') {
-        git credentialsId: 'gitea-user-pass', branch: 'main',
-          url: 'https://gitea.apps.ocp4.kskels.com/demos/spring-app.git'
+        git credentialsId: 'gitea-creds', branch: 'main', url: GITEA_REPO_URL
     }
 
     stage('Build Maven Package') {
         sh 'mvn test package'
     }
 
-    stage('SonarQube Analysis') {
-        withSonarQubeEnv(credentialsId: 'sonarqube-token',
-                         installationName: 'sonarqube') {
-            sh 'mvn org.sonarsource.scanner.maven:sonar-maven-plugin:3.7.0.1746:sonar'
+    stage('Archive Artifacts in Nexus') {
+        configFileProvider([configFile(fileId: 'maven-settings',
+                                       variable: 'MAVEN_SETTINGS')]) {
+            sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
         }
     }
 
-    stage('Archive Artifacts in Nexus') {
-        // See more details about the plugin at
-        // https://www.jenkins.io/doc/pipeline/steps/nexus-jenkins-plugin/
-        nexusPublisher nexusInstanceId: 'nexus',
-          nexusRepositoryId: 'maven-releases',
-          packages: [[
-            $class: 'MavenPackage',
-            mavenAssetList: [[
-              classifier: '', extension: '',
-              filePath: 'target/spring-app-0.0.1-SNAPSHOT.jar'
-            ]],
-            mavenCoordinate: [
-              artifactId: 'spring-app',
-              groupId: 'demos',
-              packaging: 'jar',
-              version: '0.0.1'
-            ]
-          ]]
+    stage('SonarQube Analysis') {
+        withSonarQubeEnv(credentialsId: 'sonarqube-token',
+                         installationName: 'sonarqube') {
+            sh 'mvn sonar:sonar'
+        }
     }
 
     stage('Setup BuildConfig') {
@@ -49,7 +47,7 @@ node ('maven') {
         // output:
         //   to:
         //     kind: DockerImage
-        //     name: docker.apps.ocp4.kskels.com/demos/spring-app:latest
+        //     name: docker.apps.ocp4.kskels.com/spring-app:latest
         sh 'oc apply -f k8s/'
     }
 
@@ -61,21 +59,22 @@ node ('maven') {
         def output = sh (script: buildCmd, returnStdout: true)
         sh "oc logs -f ${output}"
 
-        sh 'oc tag docker.apps.ocp4.kskels.com/demos/spring-app:latest spring-app:latest'
+        sh "oc tag ${NEXUS_IMAGE_URL}:latest spring-app:latest"
     }
 
     stage('Deploy to Dev') {
-        sh 'oc tag spring-app:latest spring-apps-dev/spring-app:latest'
+        sh "oc tag spring-app:latest ${DEV_PROJECT}/spring-app:latest"
 
-        sh 'oc new-app spring-app -n spring-apps-dev'
-        sh '''oc set probe deploy/spring-app -n spring-apps-dev \
-                  --readiness --get-url=http://:8080/'''
+        sh "oc new-app spring-app -n ${DEV_PROJECT}"
+        sh """oc set probe deploy/spring-app -n ${DEV_PROJECT} \
+                  --readiness --get-url=http://:8080/"""
 
-        sh 'oc rollout status deploy/spring-app -n spring-apps-dev'
+        sh "oc rollout status deploy/spring-app -n ${DEV_PROJECT}"
     }
 
     stage('Integration Tests') {
 
+        sh 'sleep 4'
         def output = sh (
           script: 'curl http://spring-app.spring-apps-dev:8080/',
           returnStdout: true
@@ -91,13 +90,13 @@ node ('maven') {
     // }
 
     stage('Promote to Staging') {
-        sh 'oc tag spring-app:latest spring-apps-staging/spring-app:latest'
+        sh "oc tag spring-app:latest ${STAGING_PROJECT}/spring-app:latest"
 
-        sh 'oc new-app spring-app -n spring-apps-staging'
-        sh 'oc rollout status deploy/spring-app -n spring-apps-staging'
-        sh 'oc create route edge spring-app --service spring-app -n spring-apps-staging'
+        sh "oc new-app spring-app -n ${STAGING_PROJECT}"
+        sh "oc rollout status deploy/spring-app -n ${STAGING_PROJECT}"
+        sh "oc create route edge spring-app --service spring-app -n ${STAGING_PROJECT}"
 
-        sh 'oc get route spring-app -n spring-apps-staging'
+        sh "oc get route spring-app -n ${STAGING_PROJECT}"
     }
 
 }
