@@ -8,10 +8,8 @@ metadata:
 spec:
   output:
     to:
-      kind: DockerImage
-      name: docker.apps.ocp4.kskels.com/demos/spring-app:latest
-    pushSecret:
-      name: "nexus-docker-registry"
+      kind: ImageStreamTag
+      name: spring-app:latest
   source:
     binary: {}
     type: Binary
