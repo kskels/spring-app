@@ -10,6 +10,7 @@ def DEV_PROJECT = 'spring-apps-dev'
 def STAGING_PROJECT = 'spring-apps-staging'
 
 def GITEA_REPO_URL = 'https://github.com/kskels/spring-app.git'
+def MAVEN_SETTINGS = '/tmp/maven/settings.xml'
 
 
 node ('maven-11') {
@@ -35,10 +36,7 @@ node ('maven-11') {
         }
 
         stage('Archive Artifacts in Nexus') {
-            configFileProvider([configFile(fileId: 'maven-settings',
-                                           variable: 'MAVEN_SETTINGS')]) {
-                sh 'mvn -s $MAVEN_SETTINGS -DskipTests=true deploy'
-            }
+            sh "mvn -s $MAVEN_SETTINGS -DskipTests=true deploy"
         }
 
         stage('SonarQube Analysis') {
