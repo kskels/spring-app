@@ -36,3 +36,13 @@ oc policy -n spring-apps-staging add-role-to-user edit \
 oc policy -n spring-apps-cicd add-role-to-group system:image-puller \
   system:serviceaccounts:spring-apps-staging
 ```
+
+For Tekton based pipelines, add the following role bindings
+
+```bash
+oc policy -n spring-apps-dev add-role-to-user edit \
+  system:serviceaccount:spring-apps-cicd:pipeline
+
+oc policy -n spring-apps-staging add-role-to-user edit \
+  system:serviceaccount:spring-apps-cicd:pipeline
+```
