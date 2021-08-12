@@ -12,8 +12,11 @@ def STAGING_PROJECT = 'spring-apps-staging'
 def GITEA_REPO_URL = 'https://github.com/kskels/spring-app.git'
 def MAVEN_SETTINGS = '/tmp/maven/settings.xml'
 
+def APP_VERSION = ''
 
 node ('maven-11') {
+
+    print "My test value: ${params.TEST_PARAM}"
 
     stage('Preamble') {
         sh "oc delete deploy/spring-app -n ${DEV_PROJECT} || true"
@@ -29,6 +32,12 @@ node ('maven-11') {
     container('maven') {
         stage('Checkout') {
             git credentialsId: 'gitea-creds', branch: 'main', url: GITEA_REPO_URL
+        }
+
+        stage('Check Version') {
+            APP_VERSION = sh script: 'mvn help:evaluate -Dexpression=project.version -q -DforceStdout',
+                             returnStdout: true
+            print "Version of the Spring App -> ${APP_VERSION}"
         }
 
         stage('Build Maven Package') {
@@ -64,7 +73,7 @@ node ('maven-11') {
             openshift.withProject(CICD_PROJECT) {
 
                 openshift.selector("bc", "spring-app").startBuild(
-                    "--from-file=target/spring-app-0.0.1-SNAPSHOT.jar", "--wait=true")
+                    "--from-file=target/spring-app-${APP_VERSION}.jar", "--wait=true")
             }
         }
     }
