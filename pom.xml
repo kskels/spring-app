@@ -33,9 +33,12 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
     <distributionManagement>
         <snapshotRepository>
             <id>nexus-snapshots</id>
-            <url>
-            https://nexus.apps.ocp4.kskels.com/repository/maven-snapshots</url>
+            <url>https://nexus.apps.ocp4.kskels.com/repository/maven-snapshots</url>
         </snapshotRepository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>https://nexus.apps.ocp4.kskels.com/repository/maven-releases</url>
+        </repository>
     </distributionManagement>
     <build>
         <plugins>
