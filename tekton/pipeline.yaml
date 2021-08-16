@@ -42,32 +42,6 @@ spec:
     - name: revision
       value: $(params.git-revision)
 
-  - name: cleanup-dev
-    taskRef:
-      name: delete-manifests
-      kind: Task
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-    params:
-    - name: manifest_dir
-      value: deploy/overlays/dev
-    runAfter:
-    - fetch-repository
-
-  - name: cleanup-staging
-    taskRef:
-      name: delete-manifests
-      kind: Task
-    workspaces:
-    - name: source
-      workspace: shared-workspace
-    params:
-    - name: manifest_dir
-      value: deploy/overlays/staging
-    runAfter:
-    - fetch-repository
-
   - name: run-maven-goals
     taskRef:
       name: maven
@@ -83,8 +57,7 @@ spec:
     - name: maven-settings
       workspace: maven-settings
     runAfter:
-    - cleanup-dev
-    - cleanup-staging
+    - fetch-repository
 
   - name: build-image
     taskRef:
@@ -103,6 +76,19 @@ spec:
     runAfter:
     - run-maven-goals
 
+  - name: cleanup-dev
+    taskRef:
+      name: delete-manifests
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: manifest_dir
+      value: deploy/overlays/dev
+    runAfter:
+    - build-image
+
   - name: deploy-to-dev
     taskRef:
       name: apply-manifests
@@ -116,7 +102,7 @@ spec:
     - name: namespace
       value: spring-apps-dev
     runAfter:
-    - build-image
+    - cleanup-dev
 
   - name: integration-tests
     taskRef:
@@ -154,3 +140,16 @@ spec:
       value: spring-apps-staging
     runAfter:
     - tag-for-staging
+
+  - name: upgrade-staging
+    taskRef:
+      name: upgrade-staging
+      kind: Task
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: namespace
+      value: spring-apps-staging
+    runAfter:
+    - deploy-to-staging

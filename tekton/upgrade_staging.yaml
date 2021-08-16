@@ -1,0 +1,23 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: upgrade-staging
+spec:
+  workspaces:
+  - name: source
+  params:
+    - name: namespace
+      description: Target deployment namespace
+      type: string
+  steps:
+    - name: apply
+      image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+      workingDir: /workspace/source
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          echo "Deploy latest staging tag by restarting the deployment"
+          oc rollout restart deployment spring-app -n $(inputs.params.namespace)
+          oc rollout status deploy/spring-app -n $(inputs.params.namespace)
+
+          oc get route spring-app -n $(inputs.params.namespace)

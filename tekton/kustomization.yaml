@@ -1,7 +1,8 @@
 resources:
- - 01_apply_manifests.yaml
- - 02_delete_manifests.yaml
- - 03_persistent_volume_claim.yaml
- - 04_integration_tests.yaml
- - 05_pipeline.yaml
+ - apply_manifests.yaml
+ - upgrade_staging.yaml
+ - delete_manifests.yaml
+ - persistent_volume_claim.yaml
+ - integration_tests.yaml
+ - pipeline.yaml
 
