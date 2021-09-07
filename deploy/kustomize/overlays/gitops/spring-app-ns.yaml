@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spring-apps-gitops
+spec:
+  finalizers:
+  - kubernetes

@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+- ../../base
+- spring-app-ns.yaml
+- spring-app-rb.yaml
+
+images:
+- name: quay.io/kskels/spring-app
+  newTag: latest
+namespace: spring-apps-gitops
