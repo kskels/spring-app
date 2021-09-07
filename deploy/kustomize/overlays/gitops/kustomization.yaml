@@ -7,6 +7,7 @@ bases:
 - spring-app-rb.yaml
 
 images:
-- name: quay.io/kskels/spring-app
+- name: docker.apps.ocp4.kskels.com/spring-app
+  newName: quay.io/kskels/spring-app
   newTag: latest
 namespace: spring-apps-gitops
