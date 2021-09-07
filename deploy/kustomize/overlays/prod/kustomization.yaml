@@ -13,6 +13,6 @@ images:
 
 replicas:
 - name: spring-app
-  count: 9
+  count: 3
 
 namespace: spring-apps-prod
