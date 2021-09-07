@@ -10,4 +10,9 @@ images:
 - name: docker.apps.ocp4.kskels.com/spring-app
   newName: quay.io/kskels/spring-app
   newTag: latest
+
+replicas:
+- name: spring-app
+  count: 3
+
 namespace: spring-apps-gitops
