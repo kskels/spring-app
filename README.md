@@ -16,7 +16,7 @@ oc new-project spring-apps-cicd
 Create and set permissions for development and staging namespaces
 
 ```bash
-oc new-project spring-apps-staging
+oc new-project spring-apps-dev
 
 oc policy -n spring-apps-dev add-role-to-user edit \
   system:serviceaccount:spring-apps-cicd:pipeline

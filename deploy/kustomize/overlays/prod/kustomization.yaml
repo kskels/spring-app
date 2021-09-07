@@ -3,8 +3,8 @@ kind: Kustomization
 
 bases:
 - ../../base
-- spring-app-ns.yaml
-- spring-app-rb.yaml
+- spring-apps-prod-ns.yaml
+- spring-apps-prod-rb.yaml
 
 images:
 - name: docker.apps.ocp4.kskels.com/spring-app
@@ -15,4 +15,4 @@ replicas:
 - name: spring-app
   count: 3
 
-namespace: spring-apps-gitops
+namespace: spring-apps-prod
