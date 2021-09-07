@@ -14,7 +14,7 @@ spec:
   - name: git-url
     type: string
     description: url of the git repo for the code of deployment
-    default: "https://gitea.apps.ocp4.kskels.com/demos/spring-app.git"
+    default: "https://github.com/kskels/spring-app.git"
   - name: git-revision
     type: string
     description: revision to be used from repo of the code for deployment
@@ -85,7 +85,7 @@ spec:
       workspace: shared-workspace
     params:
     - name: manifest_dir
-      value: deploy/overlays/dev
+      value: deploy/kustomize/overlays/dev
     runAfter:
     - build-image
 
@@ -98,7 +98,7 @@ spec:
       workspace: shared-workspace
     params:
     - name: manifest_dir
-      value: deploy/overlays/dev
+      value: deploy/kustomize/overlays/dev
     - name: namespace
       value: spring-apps-dev
     runAfter:
@@ -135,7 +135,7 @@ spec:
       workspace: shared-workspace
     params:
     - name: manifest_dir
-      value: deploy/overlays/staging
+      value: deploy/kustomize/overlays/staging
     - name: namespace
       value: spring-apps-staging
     runAfter:
