@@ -15,7 +15,7 @@ spec:
         app: spring-app
     spec:
       containers:
-        - image: docker.apps.ocp4.kskels.com/spring-app
+        - image: quay.io/kskels/spring-app
           imagePullPolicy: Always
           name: spring-app
           ports:

@@ -7,9 +7,8 @@ bases:
 - spring-apps-prod-rb.yaml
 
 images:
-- name: docker.apps.ocp4.kskels.com/spring-app
-  newName: quay.io/kskels/spring-app
-  newTag: latest
+- name: quay.io/kskels/spring-app
+  newTag: 1.0
 
 replicas:
 - name: spring-app
