@@ -5,6 +5,6 @@ bases:
 - ../../base
 
 images:
-- name: docker.apps.ocp4.kskels.com/spring-app
+- name: image-registry.openshift-image-registry.svc:5000/spring-apps-cicd/spring-app
   newTag: latest
 namespace: spring-apps-dev

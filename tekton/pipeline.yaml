@@ -22,7 +22,7 @@ spec:
   - name: IMAGE
     type: string
     description: image to be build from the code
-    default: "docker.apps.ocp4.kskels.com/spring-app"
+    default: "image-registry.openshift-image-registry.svc:5000/spring-apps-cicd/spring-app"
   tasks:
 
   - name: fetch-repository
@@ -50,7 +50,6 @@ spec:
     - name: GOALS
       value:
         - package
-        - deploy
     workspaces:
     - name: source
       workspace: shared-workspace
