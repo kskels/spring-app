@@ -38,6 +38,8 @@ oc policy -n spring-apps-cicd add-role-to-group system:image-puller \
 Deploy pipeline manifests
 
 ```bash
+oc project spring-apps-cicd
+
 cd tekton/
 oc apply -k .
 ```
