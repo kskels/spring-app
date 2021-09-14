@@ -8,7 +8,7 @@ bases:
 
 images:
 - name: quay.io/kskels/spring-app
-  newTag: 1.0
+  newTag: '1.0'
 
 replicas:
 - name: spring-app
