@@ -3,9 +3,15 @@ kind: Kustomization
 
 bases:
 - ../../base
+- spring-apps-dev-ns.yaml
+- spring-apps-dev-rb.yaml
 
 images:
 - name: quay.io/kskels/spring-app
-  newName: image-registry.openshift-image-registry.svc:5000/spring-apps-cicd/spring-app
-  newTag: latest
+  newTag: 'latest'
+
+replicas:
+- name: spring-app
+  count: 1
+
 namespace: spring-apps-dev

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: spring-app-set
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/kskels/spring-app.git
+      revision: HEAD
+      directories:
+      - path: deploy/kustomize/overlays/*
+  template:
+    metadata:
+      name: '{{path.basename}}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/kskels/spring-app.git
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: spring-app-{{path.basename}}
