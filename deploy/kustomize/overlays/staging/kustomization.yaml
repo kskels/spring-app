@@ -3,6 +3,8 @@ kind: Kustomization
 
 bases:
 - ../../base
+- spring-apps-staging-ns.yaml
+- spring-apps-staging-rb.yaml
 
 images:
 - name: quay.io/kskels/spring-app
