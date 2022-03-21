@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: spring-staging-prod
+  name: spring-staging-staging
 spec:
   finalizers:
   - kubernetes
