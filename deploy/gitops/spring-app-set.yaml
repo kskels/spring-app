@@ -21,3 +21,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: spring-app-{{path.basename}}
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
