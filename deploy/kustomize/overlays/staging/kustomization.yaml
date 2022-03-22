@@ -8,6 +8,5 @@ bases:
 
 images:
 - name: quay.io/kskels/spring-app
-  newName: image-registry.openshift-image-registry.svc:5000/spring-apps-cicd/spring-app
   newTag: staging
 namespace: spring-apps-staging
