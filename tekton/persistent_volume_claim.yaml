@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: source-pvc
 spec:
-  storageClassName: "ocs-storagecluster-ceph-rbd"
+  storageClassName: "odf-lvm-vg1"
   accessModes:
     - ReadWriteOnce
   resources:
